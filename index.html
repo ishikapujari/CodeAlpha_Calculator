@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Enhanced Calculator</title>
+
+  <style>
+    body {
+      background: #121212;
+      background-image:
+        radial-gradient(circle at top left, rgba(0, 255, 255, 0.15), transparent 40%),
+        radial-gradient(circle at bottom right, rgba(255, 0, 255, 0.15), transparent 40%);
+      background-blend-mode: screen;
+      height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: Arial, sans-serif;
+    }
+
+    .calculator {
+      background: rgba(34, 34, 34, 0.85);
+      backdrop-filter: blur(18px);
+      border-radius: 20px;
+      padding: 28px 28px 30px 28px;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+      max-width: 340px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1px solid rgba(0, 255, 255, 0.6);
+      box-shadow:
+        0 0 10px rgba(0, 255, 255, 0.4),
+        0 0 20px rgba(0, 255, 255, 0.25),
+        0 0 40px rgba(0, 255, 255, 0.1);
+    }
+
+    #display {
+      width: 96%;
+      height: 60px;
+      font-size: 2rem;
+      text-align: right;
+      border: none;
+      background: #000;
+      color: #0f0;
+      border-radius: 10px;
+      padding: 10px;
+      margin: 0 auto 18px auto;
+      box-shadow: inset 0 2px 9px rgba(0, 0, 0, 0.22), 0 0 8px rgba(0, 255, 0, 0.5);
+      transition: all 0.2s ease-in-out;
+      display: block;
+    }
+
+    .buttons {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .btn {
+      padding: 20px 0;
+      font-size: 1.2rem;
+      background: #444;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15), inset 0 2px 4px rgba(255, 255, 255, 0.10);
+      transition: background 0.3s, box-shadow 0.3s, transform 0.2s;
+    }
+
+    .btn:not(.operator):not(.equal):not(.clear):not(.delete) {
+      background: #555;
+    }
+
+    .operator {
+      background: linear-gradient(135deg, #f39c12, #d35400);
+      color: white;
+    }
+
+    .equal {
+      background: linear-gradient(135deg, #27ae60, #2ecc71);
+      color: white;
+      grid-column: 1 / -1;
+      width: 100%;
+      margin: 0;
+      padding: 20px 0;
+      font-size: 1.3rem;
+    }
+
+    .clear {
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+      color: white;
+    }
+
+    .delete {
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      color: white;
+    }
+
+    .btn:hover:not(:disabled) {
+      box-shadow: 0 0 18px rgba(255, 255, 255, 0.5), inset 0 2px 6px rgba(255, 255, 255, 0.25);
+      background: #666;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: scale(0.95);
+      background: #555;
+      box-shadow: inset 0 3px 7px rgba(0, 0, 0, 0.6);
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    @media (max-width: 500px) {
+      .calculator {
+        max-width: 90vw;
+        padding: 20px;
+      }
+
+      #display {
+        font-size: 1.5rem;
+        height: 55px;
+      }
+
+      .buttons {
+        gap: 10px;
+      }
+
+      .btn {
+        font-size: 1rem;
+        padding: 15px 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="calculator">
+    <input type="text" id="display" disabled />
+    <div class="buttons">
+      <button class="btn clear" data-value="C">C</button>
+      <button class="btn delete" data-value="DEL">⌫</button>
+      <button class="btn operator" data-value="%">%</button>
+      <button class="btn operator" data-value="/">÷</button>
+
+      <button class="btn" data-value="7">7</button>
+      <button class="btn" data-value="8">8</button>
+      <button class="btn" data-value="9">9</button>
+      <button class="btn operator" data-value="*">×</button>
+
+      <button class="btn" data-value="4">4</button>
+      <button class="btn" data-value="5">5</button>
+      <button class="btn" data-value="6">6</button>
+      <button class="btn operator" data-value="-">−</button>
+
+      <button class="btn" data-value="1">1</button>
+      <button class="btn" data-value="2">2</button>
+      <button class="btn" data-value="3">3</button>
+      <button class="btn operator" data-value="+">+</button>
+
+      <button class="btn parentheses" data-value="(">(</button>
+      <button class="btn parentheses" data-value=")">)</button>
+      <button class="btn" data-value="0">0</button>
+      <button class="btn" data-value=".">.</button>
+      <button class="btn equal" data-value="=">=</button>
+    </div>
+  </div>
+
+  <script>
+    const display = document.getElementById("display");
+    const buttons = document.querySelectorAll(".btn");
+
+    let currentInput = "";
+    let errorState = false;
+    let lastInputWasEqual = false;
+
+    function isOperator(char) {
+      return ['+', '-', '*', '/', '%'].includes(char);
+    }
+
+    function isNumber(char) {
+      return /\d/.test(char);
+    }
+
+    function canAddDecimal(input) {
+      const parts = input.split(/[\+\-\*\/\%\(\)]/);
+      const lastNumber = parts[parts.length - 1];
+      return !lastNumber.includes('.');
+    }
+
+    function canAddOperator(input) {
+      if (input.length === 0) return false;
+      const lastChar = input.slice(-1);
+      return !isOperator(lastChar) && lastChar !== '(';
+    }
+
+    function canAddOpenParen(input) {
+      if (input.length === 0) return true;
+      const lastChar = input.slice(-1);
+      return isOperator(lastChar) || lastChar === '(';
+    }
+
+    function canAddCloseParen(input) {
+      const openCount = (input.match(/\(/g) || []).length;
+      const closeCount = (input.match(/\)/g) || []).length;
+      const lastChar = input.slice(-1);
+      return openCount > closeCount && !isOperator(lastChar) && lastChar !== '(';
+    }
+
+    function updateDisplay() {
+      display.value = currentInput;
+      const delBtn = document.querySelector(".delete");
+      if (currentInput.length === 0 || errorState) {
+        delBtn.disabled = true;
+      } else {
+        delBtn.disabled = false;
+      }
+    }
+
+    buttons.forEach(button => {
+      button.addEventListener("click", () => {
+        const value = button.getAttribute("data-value");
+
+        if (errorState && value !== "C") {
+          return;
+        }
+
+        if (value === "C") {
+          currentInput = "";
+          errorState = false;
+          lastInputWasEqual = false;
+        }
+        else if (value === "DEL") {
+          if (currentInput.length > 0) {
+            currentInput = currentInput.slice(0, -1);
+          }
+        }
+        else if (value === "=") {
+          try {
+            let expression = currentInput.replace(/%/g, "/100");
+            let result = eval(expression);
+            currentInput = result.toString();
+            errorState = false;
+            lastInputWasEqual = true;
+          } catch {
+            currentInput = "Error";
+            errorState = true;
+          }
+        }
+        else {
+          if (lastInputWasEqual) {
+            if (isNumber(value) || value === '(' || value === '.') {
+              currentInput = value;
+            }
+            else if (isOperator(value)) {
+              currentInput += value;
+            } else {
+              return;
+            }
+            lastInputWasEqual = false;
+          } else {
+            const lastChar = currentInput.slice(-1);
+
+            if (isNumber(value)) {
+              currentInput += value;
+            }
+            else if (value === '.') {
+              if (canAddDecimal(currentInput)) {
+                currentInput += value;
+              }
+            }
+            else if (isOperator(value)) {
+              if (currentInput.length === 0 && value === '-') {
+                currentInput += value;
+              } else if (canAddOperator(currentInput)) {
+                currentInput += value;
+              }
+            }
+            else if (value === '(') {
+              if (canAddOpenParen(currentInput)) {
+                currentInput += value;
+              }
+            }
+            else if (value === ')') {
+              if (canAddCloseParen(currentInput)) {
+                currentInput += value;
+              }
+            }
+          }
+        }
+
+        updateDisplay();
+      });
+    });
+
+    document.addEventListener("keydown", (event) => {
+      const key = event.key;
+
+      if (errorState && key.toLowerCase() !== "c") {
+        return;
+      }
+
+      if (!isNaN(key) || "+-*/.%()".includes(key)) {
+        if (lastInputWasEqual) {
+          if (/\d/.test(key) || key === '(' || key === '.') {
+            currentInput = key;
+          } else if (isOperator(key)) {
+            currentInput += key;
+          } else {
+            return;
+          }
+          lastInputWasEqual = false;
+        } else {
+          const lastChar = currentInput.slice(-1);
+          if (/\d/.test(key)) {
+            currentInput += key;
+          }
+          else if (key === '.') {
+            if (canAddDecimal(currentInput)) {
+              currentInput += key;
+            }
+          }
+          else if (isOperator(key)) {
+            if (currentInput.length === 0 && key === '-') {
+              currentInput += key;
+            } else if (canAddOperator(currentInput)) {
+              currentInput += key;
+            }
+          }
+          else if (key === '(') {
+            if (canAddOpenParen(currentInput)) {
+              currentInput += key;
+            }
+          }
+          else if (key === ')') {
+            if (canAddCloseParen(currentInput)) {
+              currentInput += key;
+            }
+          }
+        }
+      }
+      else if (key === "Enter") {
+        try {
+          let expression = currentInput.replace(/%/g, "/100");
+          let result = eval(expression);
+          currentInput = result.toString();
+          errorState = false;
+          lastInputWasEqual = true;
+        } catch {
+          currentInput = "Error";
+          errorState = true;
+        }
+      }
+      else if (key === "Backspace") {
+        if (currentInput.length > 0) {
+          currentInput = currentInput.slice(0, -1);
+        }
+      }
+      else if (key.toLowerCase() === "c") {
+        currentInput = "";
+        errorState = false;
+        lastInputWasEqual = false;
+      }
+
+      updateDisplay();
+    });
+
+    updateDisplay();
+  </script>
+
+</body>
+</html>
